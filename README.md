@@ -103,38 +103,73 @@ Para trabalhar com os dados, escolhemos o PowerBi, devido a nossa familiaridade 
 
 
 = Table.TransformColumnTypes(#"Tipo Alterado", {{"last_available_confirmed_per_100k_inhabitants", type number}}, "en-US")
+
+
 = Table.TransformColumnTypes(#"Tipo Alterado", {{"last_available_confirmed_per_100k_inhabitants", type number}}, "en-US")
+
+
 = Table.TransformColumnTypes(#"Tipo Alterado com Localidade",{{"last_available_date", type date}})
+
+
 = Table.TransformColumnTypes(#"Tipo Alterado1", {{"last_available_death_rate", type number}}, "en-US")
+
+
 = Table.TransformColumnTypes(#"Tipo Alterado com Localidade1",{{"last_available_deaths", Int64.Type}, {"order_for_place", Int64.Type}, {"new_confirmed", Int64.Type}, {"new_deaths", Int64.Type}})
+
 
 Para trabalhar com os dados, como a granularidade solicitada era de “cidade”, fizemos um filtro na tabela em que:
 •	Excluímos os dados repetidos (aqueles dados em que o is_repeated = TRUE).
 •	Excluímos dados consolidados dos estados (place_type = state)
 •	Excluímos dados sem informação de código da cidade (esses dados poderão ser tanto dados de estado quanto dados em que a cidade não foi adequadamente informada, logo apenas representaria ruído em nossas informações).
+
+
 A fórmula desse filtro no PowerQuery ficou: 
+
+
 = Table.SelectRows(#"Tipo Alterado2", each ([is_repeated] = false) and ([city] <> "") and ([city_ibge_code] <> null)).
 
+
 Com tais alterações feitas, subimos os dados para o PowerBi. Para chegarmos à informação de interesse, deveríamos considerar que não estamos buscando o dado para o período todo da pandemia, mas para uma faixa específica de tempo. O grande ponto é que os dados apresentados que precisaríamos usar (a taxa de mortes por casos confirmados ou por número de infectados a cada 100 mil habitantes) não leva em consideração o número de pessoas infectadas num determinado período, apenas o número total (acumulado) de mortes ou infectados no dia de inclusão de dados. Assim, o recorte de um determinado momento pode não mostrar os dados adequados, já que o número de infectados a cada 100 mil habitantes vai sempre aumentar ao longo do tempo, superestimando o número de mortes num local num período de queda da taxa, por exemplo, e a taxa de mortes subestimada por não oscilar de forma tão pareada com o momento apresentado. Por esse motivo, optamos por usar os dados das taxas considerando o número de Novos casos confirmados e Novas mortes registradas. Para a taxa de mortes, aplicamos a fórmula: 
+
+
 Taxa real de mortes entre infectados = IFERROR(sum('caso_full (2)'[new_deaths])/sum('caso_full (2)'[new_confirmed]),0)
 
+
 Já para a taxa de novos confirmados por 100 mil habitantes, usamos a fórmula:
+
+
 Taxa real confirmados pela população = sum('caso_full (2)'[new_confirmed])/AVERAGE('caso_full (2)'[estimated_population])
 
 
 Vale lembrar que, nesse segundo caso, o número deixa de ser em relação a cada 100 mil habitantes, mas se torna a proporção de pessoas da cidade infectadas. Para podermos relativizar a questão do tamanho da população dentro da análise, criamos um filtro que leva em conta o tamanho da população. Isso é importante pois, em cidades muito pequenas tendem a mostrar um dado mais super estimado, que não necessariamente são relevantes quando se olha a informação de uma forma mais macro. Também criamos uma variável com o número de mortes dentro da população da cidade:
+
+
 Taxa real de mortes pela população = IFERROR(sum('caso_full (2)'[new_deaths])/sum('caso_full (2)'[estimated_population]),0)
 
 
 Para executar as análises, é importante considerar que o Brasil possui um número enorme de cidades. Analisar todas junto seria insano. Assim, criamos filtros (estado e tamanho da cidade) que nos permitem olhar de forma mais específica para cada região.
+
+
 Considerando de forma macro, porém, podemos afirmar que as cidades cuja situação era mais grave no primeiro trimestre de 2021 são Putinga (RS), Santa Bárbara do Sul (RS), Esperança Nova (PR), São Pedro das Missões (RS), Marema (SC). As 5 cidades são cidades pequenas (menos de 10.000 habitantes), da região sul do país. Essas taxas não são necessariamente altas (a média de novas mortes é baixa nesse período), mas, como essas são cidades muito pequenas, isso tem um impacto alto nas taxas apresentadas. 
 
+
 Visualização dos dados:
+
+
 Para visualizar essa e outras análises possíveis, basta instalar o PowerBi Desktop na máquina em que se irá visualizar o dado e depois abrir o arquivo pbix que se encontra no link https://www.dropbox.com/s/dz9x8fqp0bnpq9v/Dado.pbix?dl=0 . Caso não se deseje instalar o programa, é possível subir os dados pelo site www.powerbi.com mas, nesse caso, é preciso ter uma conta registrada.
 
+
 Links de interesse:
+
+
 Visualização do dado:
+
+
 https://www.dropbox.com/s/dz9x8fqp0bnpq9v/Dado.pbix?dl=0
+
+
 Base de dados:
+
+
 https://www.dropbox.com/s/2ae5f2u359p9dg5/caso_full.zip?dl=0
 
